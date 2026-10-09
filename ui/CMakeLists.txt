@@ -57,4 +57,11 @@ pico_add_extra_outputs(ui)
 
 target_link_options(ui PRIVATE -Wl,--print-memory-usage)
 
-target_compile_options(ui PRIVATE -DENABLE_RAM_APPS=1 -DENABLE_USB=1)
+option(UF2LOADER_USB_MSC "Offer the SD card as a USB drive while the menu is open" ON)
+if (UF2LOADER_USB_MSC)
+  set(enable_usb 1)
+else()
+  set(enable_usb 0)
+endif()
+
+target_compile_options(ui PRIVATE -DENABLE_RAM_APPS=1 -DENABLE_USB=${enable_usb})
