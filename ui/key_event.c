@@ -14,8 +14,30 @@
 
 #include "i2ckbd.h"
 #include <pico/stdio.h>
+#include "board_config.h"
 #include "key_event.h"
 #include "debug.h"
+
+#if defined(TP_IRQ_PIN)
+
+#include "input_touch.h"
+
+void keypad_init(void)
+{
+    touch_init();
+}
+
+int keypad_get_key(void)
+{
+    return touch_get_key();
+}
+
+// No battery gauge, the title bar skips the icon
+int keypad_get_battery() {
+    return -1;
+}
+
+#else
 
 void keypad_init(void)
 {
@@ -34,3 +56,5 @@ int keypad_get_battery() {
     bitClear(bat_pcnt, 7);
     return bat_pcnt;
 }
+
+#endif

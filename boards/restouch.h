@@ -31,8 +31,19 @@
 #define LCD_BL_PIN 13
 
 // GPIOs for the XPT2046 touch controller
+#define TP_SPI_INST    spi1
 #define TP_CS_PIN      16
 #define TP_IRQ_PIN     17
+
+// Touch calibration: raw readings at the screen edges. TP_SWAP_XY selects
+// which controller channel runs along the screen's x axis; swapping an edge
+// pair mirrors that axis. Build with -DUF2LOADER_TOUCH_DEBUG=ON to show the
+// raw values in the status bar.
+#define TP_SWAP_XY     1
+#define TP_RAW_LEFT    3900
+#define TP_RAW_RIGHT   200
+#define TP_RAW_TOP     200
+#define TP_RAW_BOTTOM  3900
 
 // Menu layout for the 320x240 panel
 #define UI_X 20

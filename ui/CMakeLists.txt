@@ -18,6 +18,15 @@ else ()
   set_target_properties(ui PROPERTIES OUTPUT_NAME "BOOT2350")
 endif()
 
+if (UF2LOADER_BOARD STREQUAL "restouch")
+  target_sources(ui PRIVATE input_touch.c)
+
+  option(UF2LOADER_TOUCH_DEBUG "Show raw touch readings in the status bar" OFF)
+  if (UF2LOADER_TOUCH_DEBUG)
+    target_compile_definitions(ui PRIVATE TOUCH_DEBUG=1)
+  endif()
+endif()
+
 target_compile_options(ui PRIVATE -mno-unaligned-access)
 
 pico_set_program_name(ui "uf2load")
