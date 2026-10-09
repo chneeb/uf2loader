@@ -232,7 +232,7 @@ static void load_directory(const char *path)
     if (fno.fname[0] == 0) break;                                // end of dir
     if (fno.fname[0] == '.') continue;                           // hide dotfiles
     if (fno.fattrib & AM_HID || fno.fattrib & AM_SYS) continue;  // hide hidden files
-    if (has_suffix(fno.fname, ".uf2") == false) continue;        // hide non uf2 files
+    if (!(fno.fattrib & AM_DIR) && !has_suffix(fno.fname, ".uf2")) continue;  // hide non uf2 files
 
     strlcpy(entries[entry_count].name, fno.fname, sizeof(entries[entry_count].name));
 
