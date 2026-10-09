@@ -40,8 +40,8 @@
 // pair mirrors that axis. Build with -DUF2LOADER_TOUCH_DEBUG=ON to show the
 // raw values in the status bar.
 #define TP_SWAP_XY     1
-#define TP_RAW_LEFT    3900
-#define TP_RAW_RIGHT   200
+#define TP_RAW_LEFT    200
+#define TP_RAW_RIGHT   3900
 #define TP_RAW_TOP     200
 #define TP_RAW_BOTTOM  3900
 
