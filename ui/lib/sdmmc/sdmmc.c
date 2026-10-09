@@ -53,6 +53,11 @@
 #define SD_SPI_BAUDRATE_INIT (400 * 1000)
 #define SD_SPI_BAUDRATE (20 * 1000 * 1000)
 
+#if SD_LCD_SHARED_BUS
+// The LCD leaves the shared bus at its own clock, restored on every select
+static uint32_t sd_baudrate = SD_SPI_BAUDRATE_INIT;
+#endif
+
 #define CS_H() gpio_put(SD_SPI_CS, 1) /* Set MMC CS "high" */
 #define CS_L() gpio_put(SD_SPI_CS, 0) /* Set MMC CS "low" */
 
@@ -159,6 +164,9 @@ static int select(void) /* 1:OK, 0:Timeout */
 {
   uint8_t d;
 
+#if SD_LCD_SHARED_BUS
+  spi_set_baudrate(SD_SPICH, sd_baudrate);
+#endif
   CS_L();                     /* Set CS# low */
   rcvr_mmc(&d, 1);            /* Dummy clock (force DO enabled) */
   if (wait_ready()) return 1; /* Wait for card ready */
@@ -301,6 +309,9 @@ bool MMC_disk_initialize(void)
   board_sd_bus_init();
 
   // Enable SPI at 400khz and connect to GPIOs
+#if SD_LCD_SHARED_BUS
+  sd_baudrate = SD_SPI_BAUDRATE_INIT;
+#endif
   spi_init(SD_SPICH, SD_SPI_BAUDRATE_INIT);
   gpio_set_function(SD_SPI_MISO, GPIO_FUNC_SPI);
   gpio_set_function(SD_SPI_MOSI, GPIO_FUNC_SPI);
@@ -362,6 +373,9 @@ bool MMC_disk_initialize(void)
   if (Status)
   {
     // switch to fast spi clock
+#if SD_LCD_SHARED_BUS
+    sd_baudrate = SD_SPI_BAUDRATE;
+#endif
     spi_init(SD_SPICH, SD_SPI_BAUDRATE);
   }
 

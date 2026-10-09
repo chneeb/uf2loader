@@ -7,17 +7,27 @@
 #define LCD_SPI_SPEED   25000000
 //#define LCD_SPI_SPEED 50000000
 
-#define Pico_LCD_SCK 10 //
-#define Pico_LCD_TX  11 // MOSI
-#define Pico_LCD_RX  12 // MISO
-#define Pico_LCD_CS  13 //
-#define Pico_LCD_DC  14
-#define Pico_LCD_RST 15
+#include "board_config.h"
 
+#define Pico_LCD_SCK LCD_SCK_PIN
+#define Pico_LCD_TX  LCD_MOSI_PIN // MOSI
+#define Pico_LCD_RX  LCD_MISO_PIN // MISO
+#define Pico_LCD_CS  LCD_CS_PIN
+#define Pico_LCD_DC  LCD_DC_PIN
+#define Pico_LCD_RST LCD_RST_PIN
+
+#if LCD_ILI9488
 #define ILI9488  1
-#ifdef ILI9488
 #define LCD_WIDTH 320
 #define LCD_HEIGHT 320
+#define LCD_BYTES_PER_PIXEL 3
+#elif LCD_ST7789
+#define ST7789  1
+#define LCD_WIDTH 320
+#define LCD_HEIGHT 240
+#define LCD_BYTES_PER_PIXEL 2
+#else
+#error "No LCD controller selected in the board header"
 #endif
 
 #define PIXFMT_BGR 1

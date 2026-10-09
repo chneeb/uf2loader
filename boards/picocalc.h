@@ -11,6 +11,8 @@
 #define SD_CS_PIN       17
 #define SD_DET_PIN 22
 
+#define LCD_ILI9488 1
+
 #define LCD_SPI1    1
 #define LCD_SCK_PIN 10
 #define LCD_MOSI_PIN 11

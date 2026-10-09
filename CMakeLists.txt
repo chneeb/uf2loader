@@ -57,5 +57,7 @@ add_subdirectory(common/petit_fatfs petit_fatfs)
 
 add_subdirectory(stage3)
 add_subdirectory(ui)
-add_subdirectory(diag)
+if (UF2LOADER_BOARD STREQUAL "picocalc")
+  add_subdirectory(diag)
+endif()
 

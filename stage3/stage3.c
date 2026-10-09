@@ -1,10 +1,14 @@
 #include <pico.h>
 #include <pico/time.h>
 #include <pico/bootrom.h>
+#include <pico/stdio.h>
 #include <boot/picobin.h>
 #include <hardware/flash.h>
 
+#include "board_config.h"
+#if !defined(TP_IRQ_PIN)
 #include "i2ckbd.h"
+#endif
 #include "proginfo.h"
 
 #include "pff.h"
@@ -94,6 +98,32 @@ void launch_application_from_ram(void)
 #define KEY_F5 0x85
 #define KEY_ENTER 0x0A
 
+#if defined(TP_IRQ_PIN)
+
+// Touching the screen during power-on enters the menu. BOOTSEL mode is entered
+// with the Pico's own BOOTSEL button, so there is no equivalent of BOOT_UPDATE.
+enum bootmode_e read_bootmode()
+{
+  // XPT2046 pulls PENIRQ low while the panel is pressed
+  gpio_init(TP_IRQ_PIN);
+  gpio_pull_up(TP_IRQ_PIN);
+  sleep_ms(1);
+
+  int end_time = time_us_32() + 500000; // 0.5s
+
+  while (((int)time_us_32() - end_time) < 0)
+  {
+    if (!gpio_get(TP_IRQ_PIN))
+    {
+      return BOOT_SD;
+    }
+  }
+
+  return BOOT_DEFAULT;
+}
+
+#else
+
 enum bootmode_e read_bootmode()
 {
   // TODO: if keyboard isn't available, return BOOT_UPDATE
@@ -123,6 +153,8 @@ enum bootmode_e read_bootmode()
 
   return BOOT_DEFAULT;
 }
+
+#endif
 
 int main()
 {

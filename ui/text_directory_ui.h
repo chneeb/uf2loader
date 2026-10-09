@@ -8,7 +8,11 @@
 
 #include <stdbool.h>
 
+#include "board_config.h"
+
+#ifndef ITEMS_PER_PAGE
 #define ITEMS_PER_PAGE 16
+#endif
 #define FONT_HEIGHT 12
 #define ENTRY_PADDING 2
 #define BAT_UPDATE_MS 60000

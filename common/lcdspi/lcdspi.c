@@ -51,6 +51,14 @@ void __not_in_flash_func(spi_finish)(spi_inst_t *spi) {
     spi_get_hw(spi)->icr = SPI_SSPICR_RORIC_BITS;
 }
 
+#ifdef ST7789
+// Convert an RGB888 colour to big-endian RGB565
+static inline void rgb565_bytes(int c, unsigned char *out) {
+    out[0] = ((c >> 16) & 0xF8) | ((c >> 13) & 0x07);
+    out[1] = ((c >> 5) & 0xE0) | ((c >> 3) & 0x1F);
+}
+#endif
+
 void draw_line_spi(int x1, int y1, int x2, int y2, int color) {
     int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
     int dy = abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
@@ -75,6 +83,10 @@ void set_font() {
 
 void define_region_spi(int xstart, int ystart, int xend, int yend, int rw) {
     unsigned char coord[4];
+#if SD_LCD_SHARED_BUS
+    // The SD card leaves the shared bus at its own clock
+    spi_set_baudrate(Pico_LCD_SPI_MOD, LCD_SPI_SPEED);
+#endif
     lcd_spi_lower_cs();
     gpio_put(Pico_LCD_DC, 0);
     hw_send_spi(&(uint8_t) {ILI9341_COLADDRSET}, 1);
@@ -196,6 +208,10 @@ void draw_buffer_spi(int x1, int y1, int x2, int y2, unsigned char *p) {
         rgb[1] = g8;  // Green
         rgb[2] = b8;  // Blue
         hw_send_spi(rgb, 3);
+#elif defined(ST7789)
+        q[0] = pixel >> 8;
+        q[1] = pixel & 0xFF;
+        hw_send_spi(q, 2);
 #else
         // For other controllers or if using 16-bit mode, retain the original conversion
         hw_send_spi(q, 2);
@@ -241,6 +257,9 @@ void draw_bitmap_spi(int x1, int y1, int width, int height, int scale, int fc, i
     b[1] = (bc >> 8) & 0xFF;
     b[2] = (bc & 0xFF);
 
+#elif defined(ST7789)
+    rgb565_bytes(fc, (unsigned char *) f);
+    rgb565_bytes(bc, (unsigned char *) b);
 #endif
     define_region_spi(XStart, y1, XEnd, YEnd, 1);
 
@@ -258,7 +277,7 @@ void draw_bitmap_spi(int x1, int y1, int width, int height, int scale, int fc, i
                     if (horizCoord++ < 0) continue;                  // we have not reached the left margin
                     if (horizCoord > hres) continue;                 // we are beyond the right margin
                     if ((bitmap[((i * width) + k) / 8] >> (((height * width) - ((i * width) + k) - 1) % 8)) & 1) {
-                        hw_send_spi((uint8_t *) &f, 3);
+                        hw_send_spi((uint8_t *) &f, LCD_BYTES_PER_PIXEL);
                     } else {
                         if (bc == -1) {
                             c.rgbbytes[0] = p[n];
@@ -270,7 +289,7 @@ void draw_bitmap_spi(int x1, int y1, int width, int height, int scale, int fc, i
                             b[2] = c.rgbbytes[0];
 #endif
                         }
-                        hw_send_spi((uint8_t *) &b, 3);
+                        hw_send_spi((uint8_t *) &b, LCD_BYTES_PER_PIXEL);
                     }
                     n += 3;
                 }
@@ -298,8 +317,10 @@ void draw_rect_spi(int x1, int y1, int x2, int y2, int c) {
         col[0] = (c >> 16);
         col[1] = (c >> 8) & 0xFF;
         col[2] = (c & 0xFF);
+#elif defined(ST7789)
+        rgb565_bytes(c, col);
 #endif
-        hw_send_spi(col, 3);
+        hw_send_spi(col, LCD_BYTES_PER_PIXEL);
     } else {
         int i, t, y;
         unsigned char *p;
@@ -334,6 +355,18 @@ void draw_rect_spi(int x1, int y1, int x2, int y2, int c) {
             p[t] = col[0];
             p[t + 1] = col[1];
             p[t + 2] = col[2];
+        }
+        for (y = y1; y <= y2; y++) {
+            spi_write_fast(Pico_LCD_SPI_MOD, p, i);
+        }
+#elif defined(ST7789)
+        i = x2 - x1 + 1;
+        i *= 2;
+        p = lcd_buffer;
+        rgb565_bytes(c, col);
+        for (t = 0; t < i; t += 2) {
+            p[t] = col[0];
+            p[t + 1] = col[1];
         }
         for (y = y1; y <= y2; y++) {
             spi_write_fast(Pico_LCD_SPI_MOD, p, i);
@@ -678,6 +711,35 @@ void pico_lcd_init() {
 
     spi_write_command(TFT_MADCTL);
     spi_write_cd(ILI9341_MEMCONTROL, 1, ILI9341_Portrait);
+#elif defined(ST7789)
+    reset_controller();
+
+    hres = LCD_WIDTH;
+    vres = LCD_HEIGHT;
+
+    spi_write_command(0x01); // Software reset
+    sleep_ms(150);
+
+    spi_write_command(TFT_MADCTL); // Memory Access Control
+    spi_write_data(0xA0); // MY, MV: landscape 320x240, RGB
+
+    spi_write_command(0x3A); // Pixel Interface Format
+    spi_write_data(0x55); // 16-bit colour (RGB565)
+
+    spi_write_command(TFT_INVON); // IPS panel needs inversion for correct colours
+
+    spi_write_command(TFT_SLPOUT); //Exit Sleep
+    sleep_ms(120);
+
+    lcd_clear();
+
+    spi_write_command(TFT_DISPON); //Display on
+    sleep_ms(120);
+
+    // Backlight on once the screen is cleared
+    gpio_init(LCD_BL_PIN);
+    gpio_set_dir(LCD_BL_PIN, GPIO_OUT);
+    gpio_put(LCD_BL_PIN, 1);
 #endif
 }
 
@@ -735,6 +797,14 @@ void spi_write_cd(unsigned char command, int data, ...) {
 }
 
 void lcd_spi_init() {
+#if SD_LCD_SHARED_BUS
+    // Keep the other devices on the bus deselected during LCD traffic
+    gpio_init(SD_CS_PIN);
+    gpio_put(SD_CS_PIN, 1);
+    gpio_set_dir(SD_CS_PIN, GPIO_OUT);
+    board_sd_bus_init();
+#endif
+
     // init GPIO
     gpio_init(Pico_LCD_SCK);
     gpio_init(Pico_LCD_TX);

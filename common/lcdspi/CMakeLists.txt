@@ -15,6 +15,6 @@ target_sources(lcdspi INTERFACE
         lcdspi.c
         )
 
-target_link_libraries(lcdspi INTERFACE  pico_stdlib hardware_spi)
+target_link_libraries(lcdspi INTERFACE  pico_stdlib hardware_spi board_config)
 
 target_include_directories(lcdspi INTERFACE ${CMAKE_CURRENT_LIST_DIR})

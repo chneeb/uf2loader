@@ -42,11 +42,19 @@
 #include "tusb.h"
 #endif
 
-// UI Layout Constants
+// UI Layout Constants (the board header can override them)
+#ifndef UI_WIDTH
 #define UI_WIDTH 280
+#endif
+#ifndef UI_HEIGHT
 #define UI_HEIGHT 280
+#endif
+#ifndef UI_X
 #define UI_X 20  // Offset from top-left
+#endif
+#ifndef UI_Y
 #define UI_Y 20
+#endif
 #define HEADER_TITLE_HEIGHT 20  // Height for the title header
 #define PATH_HEADER_HEIGHT 16   // Height for the current path display
 #define STATUS_BAR_HEIGHT 16    // Height for the status bar

@@ -57,6 +57,11 @@ target_compile_definitions(stage3 PRIVATE
     #ENABLE_DEBUG=1 # requires at least 20k of flash
 )
 
+# The ResTouch uses its touch controller instead of a keyboard to enter the menu
+if (UF2LOADER_BOARD STREQUAL "picocalc")
+  set(stage3_kbd i2ckbd)
+endif()
+
 # Add the standard library to the build
 target_link_libraries(stage3
     pico_stdlib
@@ -64,8 +69,9 @@ target_link_libraries(stage3
     boot_picobin_headers
     hardware_gpio
     petit_fatfs
-    i2ckbd
+    ${stage3_kbd}
     bootloader
+    board_config
 )
 
 # Add the standard include files to the build

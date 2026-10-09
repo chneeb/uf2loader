@@ -16,6 +16,10 @@
 
 // Other chip selects on the SD bus, driven high before the SD card is accessed
 #define SD_BUS_OTHER_CS_PINS LCD_CS_PIN, TP_CS_PIN
+// SD and LCD share spi1, so each sets its own clock before using the bus
+#define SD_LCD_SHARED_BUS 1
+
+#define LCD_ST7789 1
 
 #define LCD_SPI1    1
 #define LCD_SCK_PIN 10
@@ -29,5 +33,12 @@
 // GPIOs for the XPT2046 touch controller
 #define TP_CS_PIN      16
 #define TP_IRQ_PIN     17
+
+// Menu layout for the 320x240 panel
+#define UI_X 20
+#define UI_Y 0
+#define UI_WIDTH 280
+#define UI_HEIGHT 240
+#define ITEMS_PER_PAGE 13
 
 #endif // BOARD_RESTOUCH_H
