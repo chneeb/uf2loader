@@ -42,8 +42,8 @@
 #define TP_SWAP_XY     1
 #define TP_RAW_LEFT    200
 #define TP_RAW_RIGHT   3900
-#define TP_RAW_TOP     200
-#define TP_RAW_BOTTOM  3900
+#define TP_RAW_TOP     3900
+#define TP_RAW_BOTTOM  200
 
 // Menu layout for the 320x240 panel
 #define UI_X 20
