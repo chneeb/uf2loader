@@ -43,6 +43,7 @@ target_link_libraries(ui
   boot_uf2_headers
   boot_picobin_headers
   bootloader
+  board_config
   pr_binary_info_reader
   usb_msc
 )

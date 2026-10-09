@@ -42,11 +42,13 @@
 
 #include "sdmmc.h"
 
-#define SD_SPICH spi0
-#define SD_SPI_MISO 16
-#define SD_SPI_CS 17
-#define SD_SPI_SCK 18
-#define SD_SPI_MOSI 19
+#include "board_config.h"
+
+#define SD_SPICH SD_SPI_INST
+#define SD_SPI_MISO SD_MISO_PIN
+#define SD_SPI_CS SD_CS_PIN
+#define SD_SPI_SCK SD_SCLK_PIN
+#define SD_SPI_MOSI SD_MOSI_PIN
 
 #define SD_SPI_BAUDRATE_INIT (400 * 1000)
 #define SD_SPI_BAUDRATE (20 * 1000 * 1000)
@@ -295,6 +297,8 @@ bool MMC_disk_initialize(void)
   unsigned int tmr;
 
   sleep_us(10000); /* 10ms */
+
+  board_sd_bus_init();
 
   // Enable SPI at 400khz and connect to GPIOs
   spi_init(SD_SPICH, SD_SPI_BAUDRATE_INIT);

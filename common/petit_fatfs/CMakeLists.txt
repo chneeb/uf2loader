@@ -7,4 +7,4 @@ target_sources(petit_fatfs INTERFACE
 
 target_include_directories(petit_fatfs SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 
-pico_mirrored_target_link_libraries(petit_fatfs INTERFACE hardware_spi)
+pico_mirrored_target_link_libraries(petit_fatfs INTERFACE hardware_spi board_config)

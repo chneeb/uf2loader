@@ -23,7 +23,7 @@
 #include "lcdspi.h"
 #include <hardware/flash.h>
 #include <hardware/watchdog.h>
-#include "config.h"
+#include "board_config.h"
 
 #include "ff.h"
 
@@ -48,6 +48,10 @@ bool sd_insert_state = true;
 
 bool sd_card_inserted(void)
 {
+#ifndef SD_DET_PIN
+  // No card detect pin, assume the card stays inserted
+  return sd_insert_state;
+#else
   static uint32_t debounce = 0;
 
   bool new_state = gpio_get(SD_DET_PIN);
@@ -71,6 +75,7 @@ bool sd_card_inserted(void)
   }
 
   return sd_insert_state;
+#endif
 }
 
 void fs_deinit(void) { f_unmount("/"); }
@@ -167,11 +172,13 @@ int main()
   uart_set_format(uart0, 8, 1, UART_PARITY_NONE);  // 8-N-1
   uart_set_fifo_enabled(uart0, false);
 
+#ifdef SD_DET_PIN
   // Initialize SD card detection pin
   gpio_init(SD_DET_PIN);
   gpio_set_dir(SD_DET_PIN, GPIO_IN);
   gpio_pull_up(SD_DET_PIN);  // Enable pull-up resistor
   gpio_set_inover(SD_DET_PIN, GPIO_OVERRIDE_INVERT);
+#endif
 
 #if PICO_RP2350
   {

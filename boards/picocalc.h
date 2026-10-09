@@ -1,8 +1,10 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef BOARD_PICOCALC_H
+#define BOARD_PICOCALC_H
+
+// ClockworkPi PicoCalc
 
 // GPIOs for SPI interface (SD card)
-#define SD_SPI0         0
+#define SD_SPI_INST     spi0
 #define SD_SCLK_PIN     18
 #define SD_MOSI_PIN     19
 #define SD_MISO_PIN     16
@@ -29,4 +31,4 @@
 #define PICO_PS        23
 #define LED_PIN        25
 
-#endif // CONFIG_H
+#endif // BOARD_PICOCALC_H

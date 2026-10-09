@@ -41,6 +41,15 @@ project(sdboot)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+set(UF2LOADER_BOARDS picocalc restouch)
+set(UF2LOADER_BOARD picocalc CACHE STRING "Target board: ${UF2LOADER_BOARDS}")
+set_property(CACHE UF2LOADER_BOARD PROPERTY STRINGS ${UF2LOADER_BOARDS})
+if (NOT UF2LOADER_BOARD IN_LIST UF2LOADER_BOARDS)
+  message(FATAL_ERROR "UF2LOADER_BOARD must be one of: ${UF2LOADER_BOARDS}")
+endif()
+message("UF2LOADER_BOARD: " ${UF2LOADER_BOARD})
+
+add_subdirectory(boards board_config)
 add_subdirectory(common/i2ckbd i2ckbd)
 add_subdirectory(common/bootloader bootloader)
 add_subdirectory(common/lcdspi lcdspi)
