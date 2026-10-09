@@ -6,7 +6,9 @@
 #include <hardware/flash.h>
 
 #include "board_config.h"
-#if !defined(TP_IRQ_PIN)
+#if defined(TP_IRQ_PIN)
+#include <hardware/spi.h>
+#else
 #include "i2ckbd.h"
 #endif
 #include "proginfo.h"
@@ -102,8 +104,40 @@ void launch_application_from_ram(void)
 
 // Touching the screen during power-on enters the menu. BOOTSEL mode is entered
 // with the Pico's own BOOTSEL button, so there is no equivalent of BOOT_UPDATE.
+// The XPT2046 only drives PENIRQ while it is powered down with PENIRQ enabled,
+// and it keeps whatever mode it was last given across a reset of the Pico. An
+// app that leaves its CS floating while it drives the LCD feeds it random
+// commands, which can turn PENIRQ off, so put it back into that mode first.
+static void touch_enable_penirq(void)
+{
+  uint8_t cmd[3] = {0xD0, 0, 0};  // X conversion, PD=00 (PENIRQ enabled)
+
+  // Deselect the LCD and touch controller, then the SD card. They stay
+  // deselected for the app, which may not drive them itself.
+  board_sd_bus_init();
+  gpio_init(SD_CS_PIN);
+  gpio_put(SD_CS_PIN, 1);
+  gpio_set_dir(SD_CS_PIN, GPIO_OUT);
+
+  spi_init(TP_SPI_INST, 1000 * 1000);
+  gpio_set_function(SD_SCLK_PIN, GPIO_FUNC_SPI);
+  gpio_set_function(SD_MOSI_PIN, GPIO_FUNC_SPI);
+  gpio_set_function(SD_MISO_PIN, GPIO_FUNC_SPI);
+
+  gpio_put(TP_CS_PIN, 0);
+  spi_write_blocking(TP_SPI_INST, cmd, sizeof(cmd));
+  gpio_put(TP_CS_PIN, 1);
+
+  spi_deinit(TP_SPI_INST);
+  gpio_set_function(SD_SCLK_PIN, GPIO_FUNC_NULL);
+  gpio_set_function(SD_MOSI_PIN, GPIO_FUNC_NULL);
+  gpio_set_function(SD_MISO_PIN, GPIO_FUNC_NULL);
+}
+
 enum bootmode_e read_bootmode()
 {
+  touch_enable_penirq();
+
   // XPT2046 pulls PENIRQ low while the panel is pressed
   gpio_init(TP_IRQ_PIN);
   gpio_pull_up(TP_IRQ_PIN);
