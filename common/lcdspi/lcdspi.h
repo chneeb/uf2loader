@@ -26,6 +26,11 @@
 #define LCD_WIDTH 320
 #define LCD_HEIGHT 240
 #define LCD_BYTES_PER_PIXEL 2
+#elif LCD_DVI
+// HDMI from a framebuffer (lcddvi.c)
+#define LCD_WIDTH 320
+#define LCD_HEIGHT 240
+#define LCD_BYTES_PER_PIXEL 1
 #else
 #error "No LCD controller selected in the board header"
 #endif

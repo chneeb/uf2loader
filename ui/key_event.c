@@ -37,6 +37,25 @@ int keypad_get_battery() {
     return -1;
 }
 
+#elif USB_HOST_INPUT
+
+#include "input_usb.h"
+
+void keypad_init(void)
+{
+    usb_input_init();
+}
+
+int keypad_get_key(void)
+{
+    return usb_input_get_key();
+}
+
+// No battery gauge, the title bar skips the icon
+int keypad_get_battery() {
+    return -1;
+}
+
 #else
 
 void keypad_init(void)

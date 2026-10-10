@@ -1,3 +1,6 @@
 [submodule "ui/lib/pico-vfs"]
 	path = ui/lib/pico-vfs
 	url = https://github.com/oyama/pico-vfs.git
+[submodule "ui/lib/PicoDVI"]
+	path = ui/lib/PicoDVI
+	url = https://github.com/Wren6991/PicoDVI.git

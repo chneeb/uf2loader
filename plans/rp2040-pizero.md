@@ -4,6 +4,19 @@ Goal: multiboot DVI apps on the RP2040-PiZero from the SD card: pico-infonesPlus
 tiny_agi (`tinyagi_dvi_rp2040`) and MCUME emulators that fit the RP2040's 264K
 SRAM. The RP2350-PiZero follows once this works (see the end).
 
+## Status (2026-10-10)
+
+Packages 1-5 are built on branch `pizero-port`, not yet tested on hardware.
+PicoCalc and ResTouch (Pico and Pico 2) build byte-identical to before. The menu
+uses 173K of the 256K RAM. Deviations from the plan:
+- stage3 only loads a contiguous menu image below the scratch banks, and
+  PicoDVI puts its encoder in `.scratch_x`; the pizero menu links with a
+  modified copy of the SDK's no_flash linker script instead.
+- stage3's RP2040 position now follows the flash size (top of 16 MB here).
+
+Next: test on hardware (HDMI picture, USB keys, double press of RUN, installing
+and starting an app), then package 6.
+
 ## Board
 
 - RP2040, 16 MB flash, RUN button (reset) and BOOT button.

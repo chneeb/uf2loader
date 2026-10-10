@@ -11,10 +11,20 @@ project(lcdspi
 
 add_library(lcdspi INTERFACE)
 
-target_sources(lcdspi INTERFACE
-        lcdspi.c
-        )
+if (UF2LOADER_BOARD STREQUAL "pizero")
+  # HDMI from a framebuffer instead of an SPI panel, libdvi comes from ui/lib/PicoDVI
+  target_sources(lcdspi INTERFACE
+          lcddvi.c
+          )
 
-target_link_libraries(lcdspi INTERFACE  pico_stdlib hardware_spi board_config)
+  target_link_libraries(lcdspi INTERFACE pico_stdlib pico_multicore hardware_spi hardware_vreg
+                        libdvi board_config)
+else()
+  target_sources(lcdspi INTERFACE
+          lcdspi.c
+          )
+
+  target_link_libraries(lcdspi INTERFACE  pico_stdlib hardware_spi board_config)
+endif()
 
 target_include_directories(lcdspi INTERFACE ${CMAKE_CURRENT_LIST_DIR})
