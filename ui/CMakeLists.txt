@@ -47,6 +47,11 @@ if (UF2LOADER_BOARD STREQUAL "pizero")
   target_sources(ui PRIVATE input_usb.c lib/hidparser/hidparser.c)
   target_include_directories(ui PRIVATE usb_host lib/hidparser)
   target_link_libraries(ui tinyusb_host)
+
+  option(UF2LOADER_USB_DEBUG "Show the USB input state in the status bar" OFF)
+  if (UF2LOADER_USB_DEBUG)
+    target_compile_definitions(ui PRIVATE USB_DEBUG=1)
+  endif()
 endif()
 
 target_compile_options(ui PRIVATE -mno-unaligned-access)

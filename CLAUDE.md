@@ -66,6 +66,8 @@ Options:
   as the host enumerates, which hides the menu. Always off on the pizero, whose
   native USB port is the host for the menu input.
 - `UF2LOADER_TOUCH_DEBUG` (OFF, restouch): raw touch values in the status bar.
+- `UF2LOADER_USB_DEBUG` (OFF, pizero): USB devices, HID interfaces, the last
+  interface's type and its last report in the status bar.
 
 Outputs go to `<build dir>/../output/`, i.e. **all build dirs under `build/`
 share `build/output/`**, and a file there is only refreshed when its target
@@ -167,7 +169,11 @@ remaining work: `plans/rp2040-pizero.md`.
 - Input: TinyUSB host on the native USB-C port (`ui/input_usb.c`): arrows,
   d-pad or stick → Up/Down (repeat), Enter / pad A / Start → Enter, Backspace /
   Escape / Left / pad B / Select → Back. Generic pads: buttons 1-2 = Enter, 3-4
-  = Back. Known SNES clones use fixed byte maps (from galagino_pizero).
+  = Back. Known SNES clones use fixed byte maps (from galagino_pizero). Only
+  interfaces declaring a gamepad/joystick collection go through the generic
+  HID parser, so keyboards' extra interfaces (media keys, NKRO) are skipped.
+  The keyboard did not work in the first hardware test (2026-10-10); this is
+  the suspected cause, not yet confirmed.
 - Entering the menu: press RUN twice within 0.5 s. stage3 keeps a magic value in
   `.uninitialized_data`, which RAM keeps across a RUN reset.
 

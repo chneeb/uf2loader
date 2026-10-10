@@ -15,6 +15,10 @@
 
 #include "key_event.h"
 #include "input_usb.h"
+#if USB_DEBUG
+#include <stdio.h>
+#include "text_directory_ui.h"
+#endif
 
 // Menu buttons
 #define BTN_UP    0x01
@@ -72,6 +76,56 @@ static const pad_map_t pad_maps[] = {
 };
 
 static const pad_map_t *itf_map[MAX_DEV][MAX_ITF];
+
+#if USB_DEBUG
+// Shown in the status bar: devices and HID interfaces mounted, the last
+// interface's protocol (k = keyboard, m = mouse, p = parsed pad, f = fixed map,
+// - = ignored) and report count, and the start of its last report
+static int dbg_devices, dbg_mounted;
+static char dbg_proto = ' ';
+static unsigned dbg_reports;
+
+static void debug_status(const uint8_t *report, uint16_t len)
+{
+  char msg[48];
+  int n = snprintf(msg, sizeof(msg), "USB d%d h%d %c r%u", dbg_devices, dbg_mounted, dbg_proto,
+                   dbg_reports);
+  for (int i = 0; report && i < len && i < 6 && n < (int)sizeof(msg) - 3; i++)
+    n += snprintf(msg + n, sizeof(msg) - n, " %02x", report[i]);
+  text_directory_ui_set_status(msg);
+}
+
+void tuh_mount_cb(uint8_t dev_addr)
+{
+  (void)dev_addr;
+  dbg_devices++;
+  debug_status(NULL, 0);
+}
+
+void tuh_umount_cb(uint8_t dev_addr)
+{
+  (void)dev_addr;
+  if (dbg_devices) dbg_devices--;
+  debug_status(NULL, 0);
+}
+#endif
+
+// True if one of the interface's top level collections is a gamepad or
+// joystick. Only those go through the generic parser: keyboards often have
+// extra interfaces (media keys, NKRO, vendor) with large descriptors.
+static bool is_gamepad(uint8_t const *desc_report, uint16_t desc_len)
+{
+  tuh_hid_report_info_t info[4];
+  uint8_t count = tuh_hid_parse_report_descriptor(info, count_of(info), desc_report, desc_len);
+
+  for (uint8_t i = 0; i < count; i++)
+  {
+    if (info[i].usage_page == HID_USAGE_PAGE_DESKTOP &&
+        (info[i].usage == HID_USAGE_DESKTOP_GAMEPAD || info[i].usage == HID_USAGE_DESKTOP_JOYSTICK))
+      return true;
+  }
+  return false;
+}
 
 // hat switch: 0 = N, clockwise to 7 = NW, anything else = released
 static const uint8_t hat_dirs[8] = {
@@ -279,7 +333,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
     {
       tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_BOOT);
     }
-    else if (proto == HID_ITF_PROTOCOL_NONE && !itf_map[dev_addr][instance])
+    else if (proto == HID_ITF_PROTOCOL_NONE && !itf_map[dev_addr][instance] &&
+             is_gamepad(desc_report, desc_len))
     {
       if (pad_info[dev_addr][instance]) USB_FreeReportInfo(pad_info[dev_addr][instance]);
       pad_info[dev_addr][instance] = NULL;
@@ -290,13 +345,30 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
         pad_info[dev_addr][instance] = NULL;
       }
     }
+
+#if USB_DEBUG
+    dbg_proto = proto == HID_ITF_PROTOCOL_KEYBOARD ? 'k'
+                : proto == HID_ITF_PROTOCOL_MOUSE  ? 'm'
+                : itf_map[dev_addr][instance]      ? 'f'
+                : pad_info[dev_addr][instance]     ? 'p'
+                                                   : '-';
+#endif
   }
+
+#if USB_DEBUG
+  dbg_mounted++;
+  debug_status(NULL, 0);
+#endif
 
   tuh_hid_receive_report(dev_addr, instance);
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 {
+#if USB_DEBUG
+  if (dbg_mounted) dbg_mounted--;
+  debug_status(NULL, 0);
+#endif
   if (dev_addr < MAX_DEV && instance < MAX_ITF)
   {
     itf_buttons[dev_addr][instance] = 0;
@@ -320,6 +392,11 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     else if (pad_info[dev_addr][instance])
       itf_buttons[dev_addr][instance] = parse_gamepad(pad_info[dev_addr][instance], report);
   }
+
+#if USB_DEBUG
+  dbg_reports++;
+  debug_status(report, len);
+#endif
 
   tuh_hid_receive_report(dev_addr, instance);
 }
