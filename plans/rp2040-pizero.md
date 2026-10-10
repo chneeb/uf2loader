@@ -85,8 +85,9 @@ and starting an app), then package 6.
 6. **Apps** (1-1.5 d)
    - tiny_agi `tinyagi_dvi_rp2040`: flash cache already reads the usable end
      from the vector table (`XIP_BASE+0x114`); should run as is.
-   - pico-infonesPlus: limit its flash use to below uf2loader's top 16K
-     (open item in CLAUDE.md), ~0.5 d.
+   - pico-infonesPlus: done on branch `uf2loader` (repo and `pico_shared`
+     submodule): ROM area and settings stay below uf2loader's flash end,
+     ATRANS translation on the RP2350. Build with `-c 4` (RP2040-PiZero).
    - MCUME: check per emulator which ones build for the RP2040-PiZero and how
      they use flash.
 

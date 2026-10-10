@@ -188,5 +188,7 @@ All with fixes merged in their own repos:
 - The menu title still says "PicoCalc UF2 Loader".
 - RP2040-PiZero: built, not yet tested on hardware; then apps and the
   RP2350-PiZero (`plans/rp2040-pizero.md`).
-- pico-infonesPlus needs the same RP2350 flash-offset fix and RP2040 top-16K
-  limit before it runs under uf2loader.
+- pico-infonesPlus: flash fix (usable end from the vector table, ATRANS on the
+  RP2350) on branch `uf2loader` in `~/Source/pico-infonesPlus` and its
+  `pico_shared` submodule; local only, not tested on hardware. Pushing needs
+  forks of both (pico_shared is fhoedemakers/pico_shared).
