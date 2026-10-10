@@ -146,7 +146,7 @@ All with fixes merged in their own repos:
 - USB drive mode only on request (e.g. a long press) instead of on/off at build time.
 - Separate output names per board, CI matrix for restouch, README section.
 - The menu title still says "PicoCalc UF2 Loader".
-- Ports to the Waveshare RP2040-PiZero / RP2350-PiZero (DVI via PIO, USB host,
-  SD); tiny_agi's `dvi/` target is the reference.
+- Ports to the Waveshare RP2040-PiZero (first) and RP2350-PiZero: plan in
+  `plans/rp2040-pizero.md`.
 - pico-infonesPlus needs the same RP2350 flash-offset fix and RP2040 top-16K
   limit before it runs under uf2loader.
