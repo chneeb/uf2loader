@@ -8,7 +8,7 @@
 #include "board_config.h"
 #if defined(TP_IRQ_PIN)
 #include <hardware/spi.h>
-#else
+#elif !defined(DOUBLE_RESET_TIMEOUT_MS)
 #include "i2ckbd.h"
 #endif
 #include "proginfo.h"
@@ -152,6 +152,31 @@ enum bootmode_e read_bootmode()
       return BOOT_SD;
     }
   }
+
+  return BOOT_DEFAULT;
+}
+
+#elif defined(DOUBLE_RESET_TIMEOUT_MS)
+
+// Pressing RUN twice in quick succession enters the menu. RAM keeps its
+// contents across a reset by the RUN pin (not across a power cycle), so a flag
+// that is set for DOUBLE_RESET_TIMEOUT_MS after reset and is not cleared by the
+// startup code tells a second reset within that time from a single one.
+#define DOUBLE_RESET_MAGIC 0xd0b1e5e7
+
+static volatile uint32_t __attribute__((section(".uninitialized_data.double_reset"))) double_reset_flag;
+
+enum bootmode_e read_bootmode()
+{
+  if (double_reset_flag == DOUBLE_RESET_MAGIC)
+  {
+    double_reset_flag = 0;
+    return BOOT_SD;
+  }
+
+  double_reset_flag = DOUBLE_RESET_MAGIC;
+  sleep_ms(DOUBLE_RESET_TIMEOUT_MS);
+  double_reset_flag = 0;
 
   return BOOT_DEFAULT;
 }

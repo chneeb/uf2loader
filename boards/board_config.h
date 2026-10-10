@@ -7,6 +7,8 @@
 #include "picocalc.h"
 #elif UF2LOADER_BOARD_RESTOUCH
 #include "restouch.h"
+#elif UF2LOADER_BOARD_PIZERO
+#include "pizero.h"
 #else
 #error "No board selected, set UF2LOADER_BOARD in CMake"
 #endif

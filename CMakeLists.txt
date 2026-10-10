@@ -41,7 +41,7 @@ project(sdboot)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-set(UF2LOADER_BOARDS picocalc restouch)
+set(UF2LOADER_BOARDS picocalc restouch pizero)
 set(UF2LOADER_BOARD picocalc CACHE STRING "Target board: ${UF2LOADER_BOARDS}")
 set_property(CACHE UF2LOADER_BOARD PROPERTY STRINGS ${UF2LOADER_BOARDS})
 if (NOT UF2LOADER_BOARD IN_LIST UF2LOADER_BOARDS)

@@ -1,6 +1,7 @@
 
 _flash_base = 0x10000000;
-_flash_size = 2m;
+/* stage3 sits at the top of flash; the build passes the board's flash size */
+_flash_size = DEFINED(__uf2loader_flash_size) ? __uf2loader_flash_size : 2m;
 
 _btstack_flash_size = 8k;
 _bootloader_app_size = 8k;

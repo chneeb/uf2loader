@@ -29,7 +29,12 @@ if (PICO_PLATFORM MATCHES "^rp2040")
   set_target_properties(bs2_default bs2_default_library PROPERTIES EXCLUDE_FROM_ALL 1)
 
   pico_set_linker_script(stage3 ${CMAKE_CURRENT_SOURCE_DIR}/memmap_2040.ld)
-  target_compile_definitions(boot2_custom PRIVATE BOOTLOADER_START=0x101fc000)
+  math(EXPR flash_size "${PICO_FLASH_SIZE_BYTES}")
+  target_link_options(stage3 PRIVATE -Wl,--defsym=__uf2loader_flash_size=${flash_size})
+
+  # stage3 and the 8K reserved above it (memmap_2040.ld) take the top 16K of flash
+  math(EXPR bootloader_start "0x10000000 + ${PICO_FLASH_SIZE_BYTES} - 16 * 1024" OUTPUT_FORMAT HEXADECIMAL)
+  target_compile_definitions(boot2_custom PRIVATE BOOTLOADER_START=${bootloader_start})
 
 elseif(PICO_PLATFORM MATCHES "^rp2350")
 
