@@ -182,6 +182,14 @@ void __attribute__((noreturn)) usb_debug_panic(const char *fmt, ...)
   while (true) tight_loop_contents();
 }
 
+// A crash shows the log instead of hanging silently
+void isr_hardfault(void)
+{
+  for (const char *c = "\nHARD FAULT"; *c; c++) log_putc(*c);
+  log_draw();
+  while (true) tight_loop_contents();
+}
+
 // Called from the USB interrupt for each event queued for tuh_task()
 void tuh_event_hook_cb(uint8_t rhport, uint32_t eventid, bool in_isr)
 {
@@ -207,18 +215,54 @@ void tuh_umount_cb(uint8_t dev_addr)
 #endif
 
 // True if one of the interface's top level collections is a gamepad or
-// joystick. Only those go through the generic parser: keyboards often have
-// extra interfaces (media keys, NKRO, vendor) with large descriptors.
-static bool is_gamepad(uint8_t const *desc_report, uint16_t desc_len)
+// joystick. Only those go through the generic parser: keyboards and wireless
+// receivers often have extra interfaces (media keys, NKRO, vendor). TinyUSB's
+// tuh_hid_parse_report_descriptor() isn't used: it takes items with a 4 byte
+// value as 3 bytes, after which its length count can wrap and it reads far
+// past the descriptor.
+static bool is_gamepad(uint8_t const *desc, uint16_t len)
 {
-  tuh_hid_report_info_t info[4];
-  uint8_t count = tuh_hid_parse_report_descriptor(info, count_of(info), desc_report, desc_len);
+  uint32_t usage_page = 0;
+  int depth = 0;
 
-  for (uint8_t i = 0; i < count; i++)
+  for (uint16_t i = 0; i < len;)
   {
-    if (info[i].usage_page == HID_USAGE_PAGE_DESKTOP &&
-        (info[i].usage == HID_USAGE_DESKTOP_GAMEPAD || info[i].usage == HID_USAGE_DESKTOP_JOYSTICK))
-      return true;
+    uint8_t item = desc[i++];
+    uint16_t size = (item & 3) == 3 ? 4 : (item & 3);
+
+    if (item == 0xFE)  // long item: data size, tag, data
+    {
+      if (i >= len) break;
+      size = 2 + desc[i];
+    }
+    if (size > len - i) break;
+
+    uint32_t value = 0;
+    for (int k = 0; k < size && k < 4; k++) value |= (uint32_t)desc[i + k] << (8 * k);
+
+    switch (item & 0xFC)
+    {
+      case 0x04:  // Usage Page
+        usage_page = value;
+        break;
+      case 0x08:  // Usage, with its own page if 4 bytes long
+        if (depth == 0)
+        {
+          uint32_t page = size == 4 ? value >> 16 : usage_page;
+          uint32_t usage = size == 4 ? value & 0xFFFF : value;
+          if (page == HID_USAGE_PAGE_DESKTOP &&
+              (usage == HID_USAGE_DESKTOP_GAMEPAD || usage == HID_USAGE_DESKTOP_JOYSTICK))
+            return true;
+        }
+        break;
+      case 0xA0:  // Collection
+        depth++;
+        break;
+      case 0xC0:  // End Collection
+        if (depth) depth--;
+        break;
+    }
+    i += size;
   }
   return false;
 }
@@ -425,11 +469,11 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
       if (pad_maps[i].vid == vid && pad_maps[i].pid == pid) itf_map[dev_addr][instance] = &pad_maps[i];
     }
 
-    if (proto == HID_ITF_PROTOCOL_KEYBOARD)
-    {
-      tuh_hid_set_protocol(dev_addr, instance, HID_PROTOCOL_BOOT);
-    }
-    else if (proto == HID_ITF_PROTOCOL_NONE && !itf_map[dev_addr][instance] &&
+    // Keyboards are already in boot protocol: TinyUSB sets it while
+    // configuring the interface. Setting it again here would take the control
+    // pipe that the next interface of a composite device (a keyboard and
+    // mouse receiver) needs for its own configuration.
+    if (proto == HID_ITF_PROTOCOL_NONE && !itf_map[dev_addr][instance] &&
              is_gamepad(desc_report, desc_len))
     {
       if (pad_info[dev_addr][instance]) USB_FreeReportInfo(pad_info[dev_addr][instance]);

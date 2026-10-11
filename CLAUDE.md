@@ -175,11 +175,13 @@ remaining work: `plans/rp2040-pizero.md`.
   = Back. Known SNES clones use fixed byte maps (from galagino_pizero). Only
   interfaces declaring a gamepad/joystick collection go through the generic
   HID parser, so keyboards' extra interfaces (media keys, NKRO) are skipped.
-  The keyboard did not work in the first hardware test (2026-10-10). With
-  that change the debug build still showed "USB d0 h0" for the keyboard
-  (2026-10-11): it never finishes enumerating, so the parser wasn't the
-  cause. Still open; the debug line now also shows the port's line state and
-  the attach/transfer counts to narrow it down.
+  The menu's own descriptor check replaces TinyUSB's
+  `tuh_hid_parse_report_descriptor()`, which misreads 4-byte items and can
+  read far past the descriptor. Keyboards get boot protocol from TinyUSB
+  itself; the menu doesn't set it again from the mount callback, where that
+  would block the next interface's configuration. History: a wired keyboard
+  works; a wireless keyboard+mouse receiver stalled with "USB F a1 x22 d0 h0"
+  (2026-10-11), fix built, not yet retested.
 - Entering the menu: press RUN twice within 0.5 s. stage3 keeps a magic value in
   `.uninitialized_data`, which RAM keeps across a RUN reset.
 
