@@ -179,9 +179,8 @@ remaining work: `plans/rp2040-pizero.md`.
   `tuh_hid_parse_report_descriptor()`, which misreads 4-byte items and can
   read far past the descriptor. Keyboards get boot protocol from TinyUSB
   itself; the menu doesn't set it again from the mount callback, where that
-  would block the next interface's configuration. History: a wired keyboard
-  works; a wireless keyboard+mouse receiver stalled with "USB F a1 x22 d0 h0"
-  (2026-10-11), fix built, not yet retested.
+  would block the next interface's configuration. Tested 2026-10-11: wired
+  keyboard, wireless keyboard+mouse receiver and the SNES clone pad all work.
 - Entering the menu: press RUN twice within 0.5 s. stage3 keeps a magic value in
   `.uninitialized_data`, which RAM keeps across a RUN reset.
 
@@ -200,8 +199,9 @@ All with fixes merged in their own repos:
 - USB drive mode only on request (e.g. a long press) instead of on/off at build time.
 - Separate output names per board, CI matrix for restouch, README section.
 - The menu title still says "PicoCalc UF2 Loader".
-- RP2040-PiZero: built, not yet tested on hardware; then apps and the
-  RP2350-PiZero (`plans/rp2040-pizero.md`).
+- RP2040-PiZero: menu, USB input, tiny_agi and infonesPlus tested on
+  hardware; next MCUME apps (in their own repo) and the RP2350-PiZero
+  (`plans/rp2040-pizero.md`).
 - pico-infonesPlus: flash fix (usable end from the vector table, ATRANS on the
   RP2350) on branch `uf2loader` in `~/Source/pico-infonesPlus` and its
   `pico_shared` submodule; local only, not tested on hardware. Pushing needs
