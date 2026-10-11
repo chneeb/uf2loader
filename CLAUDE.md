@@ -66,8 +66,11 @@ Options:
   as the host enumerates, which hides the menu. Always off on the pizero, whose
   native USB port is the host for the menu input.
 - `UF2LOADER_TOUCH_DEBUG` (OFF, restouch): raw touch values in the status bar.
-- `UF2LOADER_USB_DEBUG` (OFF, pizero): USB devices, HID interfaces, the last
-  interface's type and its last report in the status bar.
+- `UF2LOADER_USB_DEBUG` (OFF, pizero): in the status bar, the root port's line
+  state (`-`/`L`/`F`), attach events, completed transfers, mounted devices and
+  HID interfaces, the last interface's type and its last report. Build it in
+  its own dir (`build/pizero-pico-usbdebug`) and rename its `BOOT2040.uf2` to
+  `BOOT2040-usbdebug.uf2`, then relink the normal one: both write the same file.
 
 Outputs go to `<build dir>/../output/`, i.e. **all build dirs under `build/`
 share `build/output/`**, and a file there is only refreshed when its target
@@ -172,8 +175,11 @@ remaining work: `plans/rp2040-pizero.md`.
   = Back. Known SNES clones use fixed byte maps (from galagino_pizero). Only
   interfaces declaring a gamepad/joystick collection go through the generic
   HID parser, so keyboards' extra interfaces (media keys, NKRO) are skipped.
-  The keyboard did not work in the first hardware test (2026-10-10); this is
-  the suspected cause, not yet confirmed.
+  The keyboard did not work in the first hardware test (2026-10-10). With
+  that change the debug build still showed "USB d0 h0" for the keyboard
+  (2026-10-11): it never finishes enumerating, so the parser wasn't the
+  cause. Still open; the debug line now also shows the port's line state and
+  the attach/transfer counts to narrow it down.
 - Entering the menu: press RUN twice within 0.5 s. stage3 keeps a magic value in
   `.uninitialized_data`, which RAM keeps across a RUN reset.
 

@@ -17,6 +17,8 @@
 #include "input_usb.h"
 #if USB_DEBUG
 #include <stdio.h>
+#include "hardware/structs/usb.h"
+#include "host/hcd.h"
 #include "text_directory_ui.h"
 #endif
 
@@ -78,21 +80,42 @@ static const pad_map_t pad_maps[] = {
 static const pad_map_t *itf_map[MAX_DEV][MAX_ITF];
 
 #if USB_DEBUG
-// Shown in the status bar: devices and HID interfaces mounted, the last
-// interface's protocol (k = keyboard, m = mouse, p = parsed pad, f = fixed map,
-// - = ignored) and report count, and the start of its last report
+// Shown in the status bar: the root port's line state (- = nothing attached,
+// L = low speed, F = full speed), attach events and completed transfers seen
+// by the host stack, devices and HID interfaces mounted, the last interface's
+// protocol (k = keyboard, m = mouse, p = parsed pad, f = fixed map, - =
+// ignored) and report count, and the start of its last report
 static int dbg_devices, dbg_mounted;
 static char dbg_proto = ' ';
 static unsigned dbg_reports;
+static volatile unsigned dbg_attach, dbg_xfers;
+static uint8_t dbg_report[3], dbg_report_len;
 
 static void debug_status(const uint8_t *report, uint16_t len)
 {
-  char msg[48];
-  int n = snprintf(msg, sizeof(msg), "USB d%d h%d %c r%u", dbg_devices, dbg_mounted, dbg_proto,
-                   dbg_reports);
-  for (int i = 0; report && i < len && i < 6 && n < (int)sizeof(msg) - 3; i++)
-    n += snprintf(msg + n, sizeof(msg) - n, " %02x", report[i]);
+  static const char speed[4] = {'-', 'L', 'F', '?'};
+  char msg[64];
+
+  if (report)
+  {
+    dbg_report_len = len < sizeof(dbg_report) ? len : sizeof(dbg_report);
+    memcpy(dbg_report, report, dbg_report_len);
+  }
+  int n = snprintf(msg, sizeof(msg), "USB %c a%u x%u d%d h%d %c r%u",
+                   speed[(usb_hw->sie_status & USB_SIE_STATUS_SPEED_BITS) >> USB_SIE_STATUS_SPEED_LSB],
+                   dbg_attach, dbg_xfers, dbg_devices, dbg_mounted, dbg_proto, dbg_reports);
+  for (int i = 0; i < dbg_report_len && n < (int)sizeof(msg) - 3; i++)
+    n += snprintf(msg + n, sizeof(msg) - n, " %02x", dbg_report[i]);
   text_directory_ui_set_status(msg);
+}
+
+// Called from the USB interrupt for each event queued for tuh_task()
+void tuh_event_hook_cb(uint8_t rhport, uint32_t eventid, bool in_isr)
+{
+  (void)rhport;
+  (void)in_isr;
+  if (eventid == HCD_EVENT_DEVICE_ATTACH) dbg_attach++;
+  else if (eventid == HCD_EVENT_XFER_COMPLETE) dbg_xfers++;
 }
 
 void tuh_mount_cb(uint8_t dev_addr)
@@ -418,6 +441,17 @@ int usb_input_get_key(void)
   uint8_t buttons = 0;
 
   tuh_task();
+
+#if USB_DEBUG
+  // Refresh a few times a second, so the line state and counters stay current
+  // even when enumeration stops before any callback
+  static uint32_t debug_time;
+  if ((int32_t)(now - debug_time) >= 0)
+  {
+    debug_time = now + 250 * 1000;
+    debug_status(NULL, 0);
+  }
+#endif
 
   for (int d = 0; d < MAX_DEV; d++)
   {
