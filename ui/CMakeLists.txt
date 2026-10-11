@@ -50,7 +50,10 @@ if (UF2LOADER_BOARD STREQUAL "pizero")
 
   option(UF2LOADER_USB_DEBUG "Show the USB input state in the status bar" OFF)
   if (UF2LOADER_USB_DEBUG)
-    target_compile_definitions(ui PRIVATE USB_DEBUG=1)
+    # TinyUSB's log and any panic go to the screen (input_usb.c)
+    target_compile_definitions(ui PRIVATE USB_DEBUG=1 CFG_TUSB_DEBUG=2
+                               CFG_TUSB_DEBUG_PRINTF=usb_debug_printf
+                               PICO_PANIC_FUNCTION=usb_debug_panic)
   endif()
 endif()
 

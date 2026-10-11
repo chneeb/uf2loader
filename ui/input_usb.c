@@ -16,9 +16,12 @@
 #include "key_event.h"
 #include "input_usb.h"
 #if USB_DEBUG
+#include <stdarg.h>
 #include <stdio.h>
 #include "hardware/structs/usb.h"
+#include "hardware/sync.h"
 #include "host/hcd.h"
+#include "lcdspi.h"
 #include "text_directory_ui.h"
 #endif
 
@@ -107,6 +110,76 @@ static void debug_status(const uint8_t *report, uint16_t len)
   for (int i = 0; i < dbg_report_len && n < (int)sizeof(msg) - 3; i++)
     n += snprintf(msg + n, sizeof(msg) - n, " %02x", dbg_report[i]);
   text_directory_ui_set_status(msg);
+}
+
+// TinyUSB's log (CFG_TUSB_DEBUG_PRINTF): the last lines, drawn above the status
+// bar over the file list. Also called from the USB interrupt, so it only
+// collects text; usb_input_get_key() draws it.
+#define LOG_LINES 10
+#define LOG_COLS (LCD_WIDTH / 8)
+#define LOG_LINE_HEIGHT 12
+static char log_lines[LOG_LINES][LOG_COLS + 1];
+static int log_cur, log_col;
+static volatile bool log_dirty;
+
+static void log_putc(char c)
+{
+  if (c == '\r') return;
+  if (c == '\n' || log_col >= LOG_COLS)
+  {
+    log_cur = (log_cur + 1) % LOG_LINES;
+    log_col = 0;
+    log_lines[log_cur][0] = 0;
+    if (c == '\n') return;
+  }
+  log_lines[log_cur][log_col++] = c;
+  log_lines[log_cur][log_col] = 0;
+}
+
+int usb_debug_printf(const char *fmt, ...)
+{
+  char buf[96];
+  va_list ap;
+
+  va_start(ap, fmt);
+  int n = vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+
+  uint32_t irq = save_and_disable_interrupts();
+  for (const char *c = buf; *c; c++) log_putc(*c);
+  log_dirty = true;
+  restore_interrupts(irq);
+  return n;
+}
+
+static void log_draw(void)
+{
+  int y = UI_Y + UI_HEIGHT - 16 - LOG_LINES * LOG_LINE_HEIGHT;
+
+  log_dirty = false;
+  draw_rect_spi(0, y, LCD_WIDTH - 1, y + LOG_LINES * LOG_LINE_HEIGHT - 1, BLACK);
+  for (int i = 1; i <= LOG_LINES; i++)
+  {
+    lcd_set_cursor(0, y);
+    lcd_print_string_color(log_lines[(log_cur + i) % LOG_LINES], GREEN, BLACK);
+    y += LOG_LINE_HEIGHT;
+  }
+}
+
+// PICO_PANIC_FUNCTION: show the message instead of printing it to the UART
+void __attribute__((noreturn)) usb_debug_panic(const char *fmt, ...)
+{
+  char buf[96];
+  va_list ap;
+
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+
+  for (const char *c = "\nPANIC: "; *c; c++) log_putc(*c);
+  for (const char *c = buf; *c; c++) log_putc(*c);
+  log_draw();
+  while (true) tight_loop_contents();
 }
 
 // Called from the USB interrupt for each event queued for tuh_task()
@@ -451,6 +524,7 @@ int usb_input_get_key(void)
     debug_time = now + 250 * 1000;
     debug_status(NULL, 0);
   }
+  if (log_dirty) log_draw();
 #endif
 
   for (int d = 0; d < MAX_DEV; d++)
