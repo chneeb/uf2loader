@@ -199,9 +199,10 @@ All with fixes merged in their own repos:
 - USB drive mode only on request (e.g. a long press) instead of on/off at build time.
 - Separate output names per board, CI matrix for restouch, README section.
 - The menu title still says "PicoCalc UF2 Loader".
-- RP2040-PiZero: menu, USB input, tiny_agi and infonesPlus tested on
-  hardware; next MCUME apps (in their own repo) and the RP2350-PiZero
-  (`plans/rp2040-pizero.md`).
+- RP2040-PiZero: menu, USB input, tiny_agi, infonesPlus and msxemulator
+  (`~/Source/msxemulator`, reflashes its cart slots at boot if another app
+  overwrote them) tested on hardware; next MCUME apps (in their own repo) and
+  the RP2350-PiZero (`plans/rp2040-pizero.md`).
 - pico-infonesPlus: flash fix (usable end from the vector table, ATRANS on the
   RP2350) on branch `uf2loader` in `~/Source/pico-infonesPlus` and its
   `pico_shared` submodule; local only, not tested on hardware. Pushing needs
